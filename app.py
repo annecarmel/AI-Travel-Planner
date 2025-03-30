@@ -8,41 +8,31 @@ import requests
 st.title("AI Travel Planner")
 st.write("Chat with the AI to plan your perfect trip!")
 
-# Initialize chat history
+# Initialize session state
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
+if "trip_details" not in st.session_state:
+    st.session_state["trip_details"] = {}
+if "current_question" not in st.session_state:
+    st.session_state["current_question"] = "starting_location"
 
 # Display chat history
 for message in st.session_state["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Function to refine user input
-def extract_trip_details(user_input):
-    match = re.search(r'Trip from ([A-Za-z ]+) to ([A-Za-z ]+) for (\d+) days,? (.+)', user_input, re.IGNORECASE)
-    if match:
-        starting_location = match.group(1).strip()
-        destination = match.group(2).strip()
-        days = int(match.group(3).strip())
-        preferences = match.group(4).strip()
-        return starting_location, destination, days, preferences
-    return None, None, None, None
-
-# Function to refine additional trip details
-def extract_additional_details(user_input):
-    budget_match = re.search(r'budget: ([A-Za-z]+)', user_input, re.IGNORECASE)
-    accessibility_match = re.search(r'accessibility: ([A-Za-z]+)', user_input, re.IGNORECASE)
-    accommodation_match = re.search(r'accommodation: ([A-Za-z]+)', user_input, re.IGNORECASE)
-    travel_dates_match = re.search(r'travel dates: ([\d-/]+ to [\d-/]+)', user_input, re.IGNORECASE)
-    dietary_match = re.search(r'diet: ([A-Za-z]+)', user_input, re.IGNORECASE)
-    
-    budget = budget_match.group(1).strip() if budget_match else "mid"
-    accessibility = accessibility_match.group(1).strip() if accessibility_match else "standard"
-    accommodation = accommodation_match.group(1).strip() if accommodation_match else "mid-range"
-    travel_dates = travel_dates_match.group(1).strip() if travel_dates_match else "Not specified"
-    dietary_preference = dietary_match.group(1).strip() if dietary_match else "No preference"
-    
-    return budget, accessibility, accommodation, travel_dates, dietary_preference
+# Questions to gather details step by step
+questions = {
+    "starting_location": "Where are you traveling from?",
+    "destination": "Where is your destination?",
+    "days": "How many days will your trip last?",
+    "preferences": "What are your preferences for activities (e.g., adventure, culture, relaxation)?",
+    "budget": "What is your budget level? (low, mid, luxury)",
+    "accessibility": "Do you have any accessibility requirements?",
+    "accommodation": "What type of accommodation do you prefer? (budget, mid-range, luxury)",
+    "travel_dates": "What are your travel dates? (e.g., 10/05/2025 to 15/05/2025)",
+    "dietary_preference": "Do you have any dietary preferences? (vegan, halal, gluten-free, etc.)"
+}
 
 # Function to fetch real-time attractions
 def get_real_time_attractions(destination):
@@ -71,19 +61,20 @@ def get_real_time_flight_hotel_costs(starting_location, destination, travel_date
     return flight_cost, hotel_cost
 
 # Function to generate an itinerary
-def generate_itinerary(starting_location, destination, days, preferences, budget, accessibility, accommodation, travel_dates, dietary_preference):
-    estimated_cost = get_estimated_costs(budget, days)
-    flight_cost, hotel_cost = get_real_time_flight_hotel_costs(starting_location, destination, travel_dates)
+def generate_itinerary():
+    details = st.session_state["trip_details"]
+    estimated_cost = get_estimated_costs(details["budget"], details["days"])
+    flight_cost, hotel_cost = get_real_time_flight_hotel_costs(details["starting_location"], details["destination"], details["travel_dates"])
     
-    itinerary = f"Here is your {days}-day itinerary for {destination} (Starting from {starting_location}, Travel Dates: {travel_dates}):\n"
+    itinerary = f"Here is your {details['days']}-day itinerary for {details['destination']} (Starting from {details['starting_location']}, Travel Dates: {details['travel_dates']}):\n"
     itinerary += f"\nEstimated Budget: ${estimated_cost}\n"
     itinerary += f"Flight Cost: ${flight_cost}\n"
     itinerary += f"Hotel Cost per Night: ${hotel_cost}\n"
-    itinerary += f"Dietary Preference: {dietary_preference}\n"
+    itinerary += f"Dietary Preference: {details['dietary_preference']}\n"
     
-    attractions = get_real_time_attractions(destination)
+    attractions = get_real_time_attractions(details["destination"])
     
-    for day in range(1, days + 1):
+    for day in range(1, details["days"] + 1):
         itinerary += f"\n**Day {day}:**\n"
         itinerary += f"- Morning: {attractions[day % len(attractions)]}.\n"
         itinerary += f"- Afternoon: {attractions[(day + 1) % len(attractions)]}.\n"
@@ -91,32 +82,31 @@ def generate_itinerary(starting_location, destination, days, preferences, budget
     
     return itinerary
 
-# User Input
-user_input = st.chat_input("Enter your travel details (e.g., 'Trip from New York to Paris for 5 days, loves history and food. Budget: mid, Accessibility: standard, Accommodation: luxury, Travel Dates: 10/05/2025 to 15/05/2025, Diet: vegan')...")
-if user_input:
-    # Append user message
-    st.session_state["messages"].append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    
-    # Extract trip details
-    starting_location, destination, days, preferences = extract_trip_details(user_input)
-    budget, accessibility, accommodation, travel_dates, dietary_preference = extract_additional_details(user_input)
-    
-    if destination and days and preferences:
-        itinerary = generate_itinerary(starting_location, destination, days, preferences, budget, accessibility, accommodation, travel_dates, dietary_preference)
-    else:
-        itinerary = "Could you provide more details? (e.g., 'Trip from Tokyo to Bali for 3 days, loves anime and food. Budget: luxury, Accessibility: wheelchair, Accommodation: mid-range, Travel Dates: 05/07/2025 to 08/07/2025, Diet: halal')"
-    
-    # AI Response
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        full_text = ""
-        for chunk in itinerary.split():
-            time.sleep(0.05)
-            full_text += chunk + " "
-            message_placeholder.markdown(full_text + "▌")
-        message_placeholder.markdown(full_text.strip())
-    
-    # Append AI message
-    st.session_state["messages"].append({"role": "assistant", "content": itinerary})
+# Collect user input step by step
+if st.session_state["current_question"]:
+    user_input = st.chat_input(questions[st.session_state["current_question"]])
+    if user_input:
+        st.session_state["messages"].append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+        
+        # Store user response
+        st.session_state["trip_details"][st.session_state["current_question"]] = user_input
+        
+        # Move to the next question
+        keys = list(questions.keys())
+        current_index = keys.index(st.session_state["current_question"])
+        if current_index < len(keys) - 1:
+            st.session_state["current_question"] = keys[current_index + 1]
+        else:
+            st.session_state["current_question"] = None
+            itinerary = generate_itinerary()
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                full_text = ""
+                for chunk in itinerary.split():
+                    time.sleep(0.05)
+                    full_text += chunk + " "
+                    message_placeholder.markdown(full_text + "▌")
+                message_placeholder.markdown(full_text.strip())
+            st.session_state["messages"].append({"role": "assistant", "content": itinerary})
