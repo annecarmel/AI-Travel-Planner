@@ -87,12 +87,12 @@ def get_travel_recommendations(user_input):
     """
     
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key or not api_key.startswith("sk-"):
-        st.error("Error: OpenAI API key is missing or invalid. Please set the OPENAI_API_KEY environment variable.")
+    if not api_key:
+        st.error("Error: OpenAI API key is missing. Please set the OPENAI_API_KEY environment variable in your system or GitHub Secrets.")
         return "API key error."
     
-    client = openai.OpenAI(api_key=api_key)
     try:
+        client = openai.OpenAI(api_key=api_key)
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
