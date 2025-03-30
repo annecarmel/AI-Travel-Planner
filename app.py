@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 import requests
 
 # Streamlit UI
@@ -35,31 +34,25 @@ questions = {
     "walking_tolerance": "How comfortable are you with walking long distances? (Low, Moderate, High)"
 }
 
-# Function to fetch real-time attractions
-def get_real_time_attractions(destination, preferences):
-    search_url = f"https://api.example.com/attractions?location={destination}&preferences={preferences}"
-    response = requests.get(search_url)
-    if response.status_code == 200:
-        return response.json().get("attractions", [])
-    return ["Explore local attractions", "Visit a recommended site"]
-
 # Function to generate an itinerary
 def generate_itinerary():
     details = st.session_state["trip_details"]
-    attractions = get_real_time_attractions(details["destination"], details.get("preferences", "general"))
+    destination = details.get("destination", "your destination")
+    days = int(details.get("days", 1))
+    preferences = details.get("preferences", "general")
     
-    itinerary = f"Here is your {details['days']}-day itinerary for {details['destination']}\n"
-    for day in range(1, int(details["days"]) + 1):
+    itinerary = f"Here is your {days}-day itinerary for {destination}:\n"
+    for day in range(1, days + 1):
         itinerary += f"\n**Day {day}:**\n"
-        itinerary += f"- Morning: {attractions[day % len(attractions)]}.\n"
-        itinerary += f"- Afternoon: {attractions[(day + 1) % len(attractions)]}.\n"
-        itinerary += f"- Evening: {attractions[(day + 2) % len(attractions)]}.\n"
+        itinerary += "- Morning: Explore local sights.\n"
+        itinerary += "- Afternoon: Visit a recommended attraction.\n"
+        itinerary += "- Evening: Try a popular local restaurant.\n"
     
     return itinerary
 
 # Greet the user first
 if not st.session_state["greeted"]:
-    greeting = "Hello! 😊 I'm your AI Travel Assistant. Let's plan your perfect trip! 🌍 Where would you like to go?"
+    greeting = "Hello! 😊 I'm your AI Travel Assistant. Let's plan your perfect trip! 🌍\nWhere would you like to go?"
     with st.chat_message("assistant"):
         st.markdown(greeting)
     st.session_state["messages"].append({"role": "assistant", "content": greeting})
@@ -78,19 +71,23 @@ if user_input:
         st.session_state["current_question"] = "starting_location"
         st.session_state["waiting_for_reply"] = False
     else:
-        st.session_state["trip_details"][st.session_state["current_question"]] = user_input
-        
-        keys = list(questions.keys())
-        current_index = keys.index(st.session_state["current_question"])
-        if current_index < len(keys) - 1:
-            st.session_state["current_question"] = keys[current_index + 1]
-        else:
-            st.session_state["current_question"] = None
-            itinerary = generate_itinerary()
-            with st.chat_message("assistant"):
-                st.markdown(itinerary)
-            st.session_state["messages"].append({"role": "assistant", "content": itinerary})
-
+        current_q = st.session_state["current_question"]
+        if current_q:
+            st.session_state["trip_details"][current_q] = user_input
+            keys = list(questions.keys())
+            current_index = keys.index(current_q)
+            if current_index < len(keys) - 1:
+                st.session_state["current_question"] = keys[current_index + 1]
+            else:
+                st.session_state["current_question"] = None
+                itinerary = generate_itinerary()
+                with st.chat_message("assistant"):
+                    st.markdown(itinerary)
+                st.session_state["messages"].append({"role": "assistant", "content": itinerary})
+    
+# Ask next question
 if st.session_state["current_question"]:
     with st.chat_message("assistant"):
-        st.markdown(questions[st.session_state["current_question"]])
+        question_text = questions[st.session_state["current_question"]]
+        st.markdown(question_text)
+    st.session_state["messages"].append({"role": "assistant", "content": question_text})
