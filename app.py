@@ -85,7 +85,7 @@ def get_travel_recommendations(user_input):
     AI Response:
     """
     
-    client = openai.OpenAI(api_key="YOUR_OPENAI_API_KEY")
+    client = openai.OpenAI(api_key="AI Travel Planner Key")
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
