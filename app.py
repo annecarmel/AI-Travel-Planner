@@ -36,7 +36,13 @@ questions = {
 def generate_itinerary():
     details = st.session_state["trip_details"]
     destination = details.get("destination", "your destination")
-    days = int(details.get("days", 1))
+    
+    # Ensure 'days' is a valid integer
+    try:
+        days = int(details.get("days", 1))
+    except ValueError:
+        days = 1  # Default to 1 if invalid input is given
+    
     preferences = details.get("preferences", "general")
     
     itinerary = f"Here is your {days}-day itinerary for {destination}:\n"
@@ -55,13 +61,6 @@ if not st.session_state["greeted"]:
         st.markdown(greeting)
     st.session_state["messages"].append({"role": "assistant", "content": greeting})
     st.session_state["greeted"] = True
-
-# Ask the first question
-if st.session_state["current_question"] == "starting_location":
-    first_question = questions["starting_location"]
-    with st.chat_message("assistant"):
-        st.markdown(first_question)
-    st.session_state["messages"].append({"role": "assistant", "content": first_question})
 
 # Handle user input
 user_input = st.chat_input("Tell me about your trip!")
@@ -84,8 +83,8 @@ if user_input:
             with st.chat_message("assistant"):
                 st.markdown(itinerary)
             st.session_state["messages"].append({"role": "assistant", "content": itinerary})
-    
-# Ask next question
+
+# Ask next question only if there are more questions left
 if st.session_state["current_question"]:
     next_question = questions[st.session_state["current_question"]]
     with st.chat_message("assistant"):
