@@ -13,7 +13,7 @@ def extract_trip_duration(user_input):
 
 def fetch_real_time_data(destination):
     try:
-        API_KEY = os.getenv("SKYSCANNER_API_KEY", "")
+        API_KEY = os.getenv("SKYSCANNER_API_KEY")
         if not API_KEY:
             return "API key missing. Please update your API key."
         search_url = f"https://api.skyscanner.net/apiservices/browsequotes/v1.0/US/USD/en-US/anywhere/{destination}/anytime"
@@ -26,7 +26,7 @@ def fetch_real_time_data(destination):
 
 def fetch_weather(destination):
     try:
-        API_KEY = os.getenv("WEATHER_API_KEY", "")
+        API_KEY = os.getenv("WEATHER_API_KEY")
         if not API_KEY:
             return "API key missing. Please update your API key."
         weather_url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={destination}"
@@ -38,7 +38,7 @@ def fetch_weather(destination):
 
 def fetch_local_events(destination):
     try:
-        API_KEY = os.getenv("EVENTBRITE_API_KEY", "")
+        API_KEY = os.getenv("EVENTBRITE_API_KEY")
         if not API_KEY:
             return "API key missing. Please update your API key."
         events_url = f"https://www.eventbriteapi.com/v3/events/search/?location.address={destination}"
@@ -86,11 +86,11 @@ def get_travel_recommendations(user_input):
     AI Response:
     """
     
-    api_key = os.getenv("OPENAI_API_KEY", "")
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return "Error: OpenAI API key is missing. Please set the OPENAI_API_KEY environment variable."
     
-    client = openai.Client(api_key=api_key)
+    client = openai.OpenAI(api_key=api_key)
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
