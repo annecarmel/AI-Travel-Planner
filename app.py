@@ -18,11 +18,22 @@ for message in st.session_state["messages"]:
 # Function to generate an itinerary
 def generate_itinerary(destination, days, preferences):
     itinerary = f"Here is your {days}-day itinerary for {destination}:\n"
+    
+    activities = {
+        "history": ["Visit historical landmarks", "Explore a museum", "Take a guided history tour"],
+        "food": ["Try local street food", "Dine at a famous restaurant", "Take a cooking class"],
+        "adventure": ["Go hiking in scenic areas", "Try water sports", "Experience a jungle safari"],
+        "beach": ["Relax on a famous beach", "Enjoy a boat tour", "Try snorkeling or diving"],
+        "culture": ["Watch a traditional performance", "Visit local markets", "Explore an art gallery"]
+    }
+    
+    user_preferences = preferences.lower().split(" and ")
+    
     for day in range(1, days + 1):
         itinerary += f"\n**Day {day}:**\n"
-        itinerary += "- Morning: Explore a top attraction related to your interests.\n"
-        itinerary += "- Afternoon: Try local cuisine at a recommended spot.\n"
-        itinerary += "- Evening: Enjoy a relaxing activity like a sunset view or a cultural event.\n"
+        itinerary += f"- Morning: {activities.get(user_preferences[0], ['Explore a top attraction'])[0]}.\n"
+        itinerary += f"- Afternoon: {activities.get(user_preferences[1] if len(user_preferences) > 1 else 'food', ['Try local cuisine'])[0]}.\n"
+        itinerary += f"- Evening: {activities.get(user_preferences[2] if len(user_preferences) > 2 else 'culture', ['Enjoy a cultural event'])[0]}.\n"
     return itinerary
 
 # User Input
