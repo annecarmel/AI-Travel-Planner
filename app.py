@@ -1,8 +1,7 @@
 import streamlit as st
 import time
-import re
-from datetime import datetime
 import requests
+from datetime import datetime
 
 # Streamlit UI
 st.title("AI Travel Planner ✈️")
@@ -27,20 +26,21 @@ questions = {
     "starting_location": "Where are you traveling from?",
     "destination": "Where is your destination?",
     "days": "How many days will your trip last?",
-    "preferences": "What are your preferences for activities (e.g., adventure, culture, relaxation)?",
+    "preferences": "What are your preferences for activities (e.g., adventure, culture, relaxation, hidden gems)?",
     "budget": "What is your budget level? (low, mid, luxury)",
-    "accessibility": "Do you have any accessibility requirements?",
-    "accommodation": "What type of accommodation do you prefer? (budget, mid-range, luxury)",
+    "accessibility": "Do you have any mobility or accessibility requirements?",
+    "accommodation": "What type of accommodation do you prefer? (budget, mid-range, luxury, central location)",
     "travel_dates": "What are your travel dates? (e.g., 10/05/2025 to 15/05/2025)",
-    "dietary_preference": "Do you have any dietary preferences? (vegan, halal, gluten-free, etc.)"
+    "dietary_preference": "Do you have any dietary preferences? (vegan, halal, gluten-free, etc.)",
+    "specific_interests": "Are there any specific activities or landmarks you'd like to include?"
 }
 
-# Function to fetch real-time attractions
+# Function to fetch real-time attractions using web search API
 def get_real_time_attractions(destination):
     search_url = f"https://api.example.com/attractions?location={destination}"
     response = requests.get(search_url)
     if response.status_code == 200:
-        return response.json().get("attractions", [])
+        return response.json().get("attractions", ["Explore local attractions", "Visit a recommended site"])
     return ["Explore local attractions", "Visit a recommended site"]
 
 # Function to fetch estimated costs
