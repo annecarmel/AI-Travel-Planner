@@ -1,12 +1,9 @@
 import streamlit as st
 import time
 import requests
-from datetime import datetime
 
 # Streamlit UI
-st.title("AI Travel Planner ✈️")
-st.write("Hello! 😊 I'm your AI Travel Assistant. Let's plan your perfect trip! 🌍")
-st.write("I'll ask you a few questions to customize your itinerary.")
+st.title("AI Travel Planner Chatbot ✈️")
 
 # Initialize session state
 if "messages" not in st.session_state:
@@ -14,7 +11,9 @@ if "messages" not in st.session_state:
 if "trip_details" not in st.session_state:
     st.session_state["trip_details"] = {}
 if "current_question" not in st.session_state:
-    st.session_state["current_question"] = "starting_location"
+    st.session_state["current_question"] = None
+if "greeted" not in st.session_state:
+    st.session_state["greeted"] = False
 
 # Display chat history
 for message in st.session_state["messages"]:
@@ -26,56 +25,29 @@ questions = {
     "starting_location": "Where are you traveling from?",
     "destination": "Where is your destination?",
     "days": "How many days will your trip last?",
-    "preferences": "What are your preferences for activities (e.g., adventure, culture, relaxation, hidden gems)?",
-    "budget": "What is your budget level? (low, mid, luxury)",
-    "accessibility": "Do you have any mobility or accessibility requirements?",
-    "accommodation": "What type of accommodation do you prefer? (budget, mid-range, luxury, central location)",
-    "travel_dates": "What are your travel dates? (e.g., 10/05/2025 to 15/05/2025)",
-    "dietary_preference": "Do you have any dietary preferences? (vegan, halal, gluten-free, etc.)",
-    "specific_interests": "Are there any specific activities or landmarks you'd like to include?"
+    "purpose": "What is the purpose of your trip? (Vacation, Business, etc.)",
+    "preferences": "What are your interests? (Adventure, Culture, Relaxation, Food, etc.)",
+    "budget": "What is your budget level? (Low, Mid, Luxury)",
+    "accommodation": "What type of accommodation do you prefer? (Budget, Mid-range, Luxury)",
+    "dietary_preference": "Do you have any dietary preferences? (Vegan, Halal, Gluten-free, etc.)",
+    "walking_tolerance": "How comfortable are you with walking long distances? (Low, Moderate, High)"
 }
 
-# Function to fetch real-time attractions using web search API
-def get_real_time_attractions(destination):
-    search_url = f"https://api.example.com/attractions?location={destination}"
+# Function to fetch real-time attractions
+def get_real_time_attractions(destination, preferences):
+    search_url = f"https://api.example.com/attractions?location={destination}&preferences={preferences}"
     response = requests.get(search_url)
     if response.status_code == 200:
-        return response.json().get("attractions", ["Explore local attractions", "Visit a recommended site"])
+        return response.json().get("attractions", [])
     return ["Explore local attractions", "Visit a recommended site"]
-
-# Function to fetch estimated costs
-def get_estimated_costs(budget, days):
-    cost_per_day = {"low": 50, "mid": 150, "luxury": 400}
-    return cost_per_day.get(budget, 150) * days
-
-# Function to fetch real-time flight and hotel costs
-def get_real_time_flight_hotel_costs(starting_location, destination, travel_dates):
-    flight_search_url = f"https://api.example.com/flights?from={starting_location}&to={destination}&dates={travel_dates}"
-    hotel_search_url = f"https://api.example.com/hotels?location={destination}&dates={travel_dates}"
-    
-    flight_response = requests.get(flight_search_url)
-    hotel_response = requests.get(hotel_search_url)
-    
-    flight_cost = flight_response.json().get("average_price", "Not available") if flight_response.status_code == 200 else "Not available"
-    hotel_cost = hotel_response.json().get("average_price_per_night", "Not available") if hotel_response.status_code == 200 else "Not available"
-    
-    return flight_cost, hotel_cost
 
 # Function to generate an itinerary
 def generate_itinerary():
     details = st.session_state["trip_details"]
-    estimated_cost = get_estimated_costs(details["budget"], details["days"])
-    flight_cost, hotel_cost = get_real_time_flight_hotel_costs(details["starting_location"], details["destination"], details["travel_dates"])
+    attractions = get_real_time_attractions(details["destination"], details["preferences"])
     
-    itinerary = f"Here is your {details['days']}-day itinerary for {details['destination']} (Starting from {details['starting_location']}, Travel Dates: {details['travel_dates']}):\n"
-    itinerary += f"\nEstimated Budget: ${estimated_cost}\n"
-    itinerary += f"Flight Cost: ${flight_cost}\n"
-    itinerary += f"Hotel Cost per Night: ${hotel_cost}\n"
-    itinerary += f"Dietary Preference: {details['dietary_preference']}\n"
-    
-    attractions = get_real_time_attractions(details["destination"])
-    
-    for day in range(1, details["days"] + 1):
+    itinerary = f"Here is your {details['days']}-day itinerary for {details['destination']}\n"
+    for day in range(1, int(details["days"]) + 1):
         itinerary += f"\n**Day {day}:**\n"
         itinerary += f"- Morning: {attractions[day % len(attractions)]}.\n"
         itinerary += f"- Afternoon: {attractions[(day + 1) % len(attractions)]}.\n"
@@ -83,31 +55,40 @@ def generate_itinerary():
     
     return itinerary
 
-# Collect user input step by step
-if st.session_state["current_question"]:
-    user_input = st.chat_input(questions[st.session_state["current_question"]])
-    if user_input:
-        st.session_state["messages"].append({"role": "user", "content": user_input})
-        with st.chat_message("user"):
-            st.markdown(user_input)
-        
-        # Store user response
-        st.session_state["trip_details"][st.session_state["current_question"]] = user_input
-        
-        # Move to the next question
-        keys = list(questions.keys())
-        current_index = keys.index(st.session_state["current_question"])
-        if current_index < len(keys) - 1:
-            st.session_state["current_question"] = keys[current_index + 1]
-        else:
-            st.session_state["current_question"] = None
-            itinerary = generate_itinerary()
-            with st.chat_message("assistant"):
-                message_placeholder = st.empty()
-                full_text = ""
-                for chunk in itinerary.split():
-                    time.sleep(0.05)
-                    full_text += chunk + " "
-                    message_placeholder.markdown(full_text + "▌")
-                message_placeholder.markdown(full_text.strip())
-            st.session_state["messages"].append({"role": "assistant", "content": itinerary})
+# Greet the user first
+if not st.session_state["greeted"]:
+    greeting = "Hello! 😊 I'm your AI Travel Assistant. Let's plan your perfect trip! 🌍 Where would you like to go?"
+    with st.chat_message("assistant"):
+        st.markdown(greeting)
+    st.session_state["messages"].append({"role": "assistant", "content": greeting})
+    st.session_state["greeted"] = True
+else:
+    # Collect user input dynamically
+    if st.session_state["current_question"] is None:
+        user_input = st.chat_input("Tell me your destination or ask for travel ideas!")
+        if user_input:
+            st.session_state["messages"].append({"role": "user", "content": user_input})
+            with st.chat_message("user"):
+                st.markdown(user_input)
+            
+            st.session_state["trip_details"]["destination"] = user_input
+            st.session_state["current_question"] = "starting_location"
+    else:
+        user_input = st.chat_input(questions[st.session_state["current_question"]])
+        if user_input:
+            st.session_state["messages"].append({"role": "user", "content": user_input})
+            with st.chat_message("user"):
+                st.markdown(user_input)
+            
+            st.session_state["trip_details"][st.session_state["current_question"]] = user_input
+            
+            keys = list(questions.keys())
+            current_index = keys.index(st.session_state["current_question"])
+            if current_index < len(keys) - 1:
+                st.session_state["current_question"] = keys[current_index + 1]
+            else:
+                st.session_state["current_question"] = None
+                itinerary = generate_itinerary()
+                with st.chat_message("assistant"):
+                    st.markdown(itinerary)
+                st.session_state["messages"].append({"role": "assistant", "content": itinerary})
