@@ -14,6 +14,8 @@ if "current_question" not in st.session_state:
     st.session_state["current_question"] = None
 if "greeted" not in st.session_state:
     st.session_state["greeted"] = False
+if "waiting_for_reply" not in st.session_state:
+    st.session_state["waiting_for_reply"] = False
 
 # Display chat history
 for message in st.session_state["messages"]:
@@ -44,7 +46,7 @@ def get_real_time_attractions(destination, preferences):
 # Function to generate an itinerary
 def generate_itinerary():
     details = st.session_state["trip_details"]
-    attractions = get_real_time_attractions(details["destination"], details["preferences"])
+    attractions = get_real_time_attractions(details["destination"], details.get("preferences", "general"))
     
     itinerary = f"Here is your {details['days']}-day itinerary for {details['destination']}\n"
     for day in range(1, int(details["days"]) + 1):
@@ -62,33 +64,33 @@ if not st.session_state["greeted"]:
         st.markdown(greeting)
     st.session_state["messages"].append({"role": "assistant", "content": greeting})
     st.session_state["greeted"] = True
-else:
-    # Collect user input dynamically
-    if st.session_state["current_question"] is None:
-        user_input = st.chat_input("Tell me your destination or ask for travel ideas!")
-        if user_input:
-            st.session_state["messages"].append({"role": "user", "content": user_input})
-            with st.chat_message("user"):
-                st.markdown(user_input)
-            
-            st.session_state["trip_details"]["destination"] = user_input
-            st.session_state["current_question"] = "starting_location"
+    st.session_state["waiting_for_reply"] = True
+
+# Handle user input
+user_input = st.chat_input("Tell me about your trip!")
+if user_input:
+    st.session_state["messages"].append({"role": "user", "content": user_input})
+    with st.chat_message("user"):
+        st.markdown(user_input)
+    
+    if st.session_state["waiting_for_reply"]:
+        st.session_state["trip_details"]["destination"] = user_input
+        st.session_state["current_question"] = "starting_location"
+        st.session_state["waiting_for_reply"] = False
     else:
-        user_input = st.chat_input(questions[st.session_state["current_question"]])
-        if user_input:
-            st.session_state["messages"].append({"role": "user", "content": user_input})
-            with st.chat_message("user"):
-                st.markdown(user_input)
-            
-            st.session_state["trip_details"][st.session_state["current_question"]] = user_input
-            
-            keys = list(questions.keys())
-            current_index = keys.index(st.session_state["current_question"])
-            if current_index < len(keys) - 1:
-                st.session_state["current_question"] = keys[current_index + 1]
-            else:
-                st.session_state["current_question"] = None
-                itinerary = generate_itinerary()
-                with st.chat_message("assistant"):
-                    st.markdown(itinerary)
-                st.session_state["messages"].append({"role": "assistant", "content": itinerary})
+        st.session_state["trip_details"][st.session_state["current_question"]] = user_input
+        
+        keys = list(questions.keys())
+        current_index = keys.index(st.session_state["current_question"])
+        if current_index < len(keys) - 1:
+            st.session_state["current_question"] = keys[current_index + 1]
+        else:
+            st.session_state["current_question"] = None
+            itinerary = generate_itinerary()
+            with st.chat_message("assistant"):
+                st.markdown(itinerary)
+            st.session_state["messages"].append({"role": "assistant", "content": itinerary})
+
+if st.session_state["current_question"]:
+    with st.chat_message("assistant"):
+        st.markdown(questions[st.session_state["current_question"]])
