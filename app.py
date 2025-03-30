@@ -10,11 +10,9 @@ if "messages" not in st.session_state:
 if "trip_details" not in st.session_state:
     st.session_state["trip_details"] = {}
 if "current_question" not in st.session_state:
-    st.session_state["current_question"] = None
+    st.session_state["current_question"] = "starting_location"
 if "greeted" not in st.session_state:
     st.session_state["greeted"] = False
-if "waiting_for_reply" not in st.session_state:
-    st.session_state["waiting_for_reply"] = False
 
 # Display chat history
 for message in st.session_state["messages"]:
@@ -52,12 +50,18 @@ def generate_itinerary():
 
 # Greet the user first
 if not st.session_state["greeted"]:
-    greeting = "Hello! 😊 I'm your AI Travel Assistant. Let's plan your perfect trip! 🌍\nWhere would you like to go?"
+    greeting = "Hello! 😊 I'm your AI Travel Assistant. Let's plan your perfect trip! 🌍"
     with st.chat_message("assistant"):
         st.markdown(greeting)
     st.session_state["messages"].append({"role": "assistant", "content": greeting})
     st.session_state["greeted"] = True
-    st.session_state["waiting_for_reply"] = True
+
+# Ask the first question
+if st.session_state["current_question"] == "starting_location":
+    first_question = questions["starting_location"]
+    with st.chat_message("assistant"):
+        st.markdown(first_question)
+    st.session_state["messages"].append({"role": "assistant", "content": first_question})
 
 # Handle user input
 user_input = st.chat_input("Tell me about your trip!")
@@ -66,28 +70,24 @@ if user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
     
-    if st.session_state["waiting_for_reply"]:
-        st.session_state["trip_details"]["destination"] = user_input
-        st.session_state["current_question"] = "starting_location"
-        st.session_state["waiting_for_reply"] = False
-    else:
-        current_q = st.session_state["current_question"]
-        if current_q:
-            st.session_state["trip_details"][current_q] = user_input
-            keys = list(questions.keys())
-            current_index = keys.index(current_q)
-            if current_index < len(keys) - 1:
-                st.session_state["current_question"] = keys[current_index + 1]
-            else:
-                st.session_state["current_question"] = None
-                itinerary = generate_itinerary()
-                with st.chat_message("assistant"):
-                    st.markdown(itinerary)
-                st.session_state["messages"].append({"role": "assistant", "content": itinerary})
+    current_q = st.session_state["current_question"]
+    if current_q:
+        st.session_state["trip_details"][current_q] = user_input
+        keys = list(questions.keys())
+        current_index = keys.index(current_q)
+        
+        if current_index < len(keys) - 1:
+            st.session_state["current_question"] = keys[current_index + 1]
+        else:
+            st.session_state["current_question"] = None
+            itinerary = generate_itinerary()
+            with st.chat_message("assistant"):
+                st.markdown(itinerary)
+            st.session_state["messages"].append({"role": "assistant", "content": itinerary})
     
 # Ask next question
 if st.session_state["current_question"]:
+    next_question = questions[st.session_state["current_question"]]
     with st.chat_message("assistant"):
-        question_text = questions[st.session_state["current_question"]]
-        st.markdown(question_text)
-    st.session_state["messages"].append({"role": "assistant", "content": question_text})
+        st.markdown(next_question)
+    st.session_state["messages"].append({"role": "assistant", "content": next_question})
