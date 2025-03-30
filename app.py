@@ -31,7 +31,7 @@ def generate_itinerary(destination, days, preferences):
     itinerary = f"Here is your {days}-day itinerary for {destination}:\n"
     
     activities = {
-        "history": ["Visit historical landmarks", "Explore a museum", "Take a guided history tour"],
+        "history": ["Visit ancient ruins", "Explore a historic museum", "Take a guided history tour"],
         "food": ["Try local street food", "Dine at a famous restaurant", "Take a cooking class"],
         "adventure": ["Go hiking in scenic areas", "Try water sports", "Experience a jungle safari"],
         "beach": ["Relax on a famous beach", "Enjoy a boat tour", "Try snorkeling or diving"],
@@ -40,12 +40,15 @@ def generate_itinerary(destination, days, preferences):
     }
     
     user_preferences = preferences.lower().split(" and ")
+    selected_activities = []
     
     for day in range(1, days + 1):
         itinerary += f"\n**Day {day}:**\n"
-        itinerary += f"- Morning: {activities.get(user_preferences[0], ['Explore a top attraction'])[day % len(activities.get(user_preferences[0], ['Explore a top attraction']))]}.\n"
-        itinerary += f"- Afternoon: {activities.get(user_preferences[1] if len(user_preferences) > 1 else 'food', ['Try local cuisine'])[day % len(activities.get(user_preferences[1] if len(user_preferences) > 1 else 'food', ['Try local cuisine']))]}.\n"
-        itinerary += f"- Evening: {activities.get(user_preferences[2] if len(user_preferences) > 2 else 'culture', ['Enjoy a cultural event'])[day % len(activities.get(user_preferences[2] if len(user_preferences) > 2 else 'culture', ['Enjoy a cultural event']))]}.\n"
+        for i in range(3):
+            category = user_preferences[i] if i < len(user_preferences) else "culture"
+            available_options = activities.get(category, ["Explore a top attraction"])
+            activity = available_options[day % len(available_options)]
+            itinerary += f"- {'Morning' if i == 0 else 'Afternoon' if i == 1 else 'Evening'}: {activity}.\n"
     return itinerary
 
 # User Input
