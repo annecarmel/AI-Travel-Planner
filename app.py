@@ -2,6 +2,7 @@ import openai
 import streamlit as st
 import re
 import requests
+import time
 
 def extract_trip_duration(user_input):
     match = re.search(r'(\d+)\s*day', user_input, re.IGNORECASE)
@@ -10,28 +11,43 @@ def extract_trip_duration(user_input):
     return 3  # Default to 3 days if not specified
 
 def fetch_real_time_data(destination):
-    search_url = f"https://api.skyscanner.net/apiservices/browsequotes/v1.0/US/USD/en-US/anywhere/{destination}/anytime"  # Replace with real API key
-    headers = {"apikey": "YOUR_SKYSCANNER_API_KEY"}
-    response = requests.get(search_url, headers=headers)
-    if response.status_code == 200:
+    try:
+        API_KEY = "YOUR_SKYSCANNER_API_KEY"
+        if API_KEY == "YOUR_SKYSCANNER_API_KEY":
+            return "API key missing. Please update your API key."
+        search_url = f"https://api.skyscanner.net/apiservices/browsequotes/v1.0/US/USD/en-US/anywhere/{destination}/anytime"
+        headers = {"apikey": API_KEY}
+        response = requests.get(search_url, headers=headers)
+        response.raise_for_status()
         return response.json()
-    return None
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching real-time travel data: {str(e)}"
 
 def fetch_weather(destination):
-    weather_url = f"https://api.weatherapi.com/v1/current.json?key=YOUR_WEATHER_API_KEY&q={destination}"
-    response = requests.get(weather_url)
-    if response.status_code == 200:
+    try:
+        API_KEY = "YOUR_WEATHER_API_KEY"
+        if API_KEY == "YOUR_WEATHER_API_KEY":
+            return "API key missing. Please update your API key."
+        weather_url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={destination}"
+        response = requests.get(weather_url)
+        response.raise_for_status()
         return response.json().get('current', {}).get('condition', {}).get('text', "Weather data unavailable")
-    return "Weather data unavailable"
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching weather data: {str(e)}"
 
 def fetch_local_events(destination):
-    events_url = f"https://www.eventbriteapi.com/v3/events/search/?location.address={destination}"  # Replace with real API key
-    headers = {"Authorization": "Bearer YOUR_EVENTBRITE_API_KEY"}
-    response = requests.get(events_url, headers=headers)
-    if response.status_code == 200:
+    try:
+        API_KEY = "YOUR_EVENTBRITE_API_KEY"
+        if API_KEY == "YOUR_EVENTBRITE_API_KEY":
+            return "API key missing. Please update your API key."
+        events_url = f"https://www.eventbriteapi.com/v3/events/search/?location.address={destination}"
+        headers = {"Authorization": f"Bearer {API_KEY}"}
+        response = requests.get(events_url, headers=headers)
+        response.raise_for_status()
         events = response.json().get("events", [])
         return [event["name"]["text"] for event in events[:5]] if events else "No upcoming events."
-    return "No local events found"
+    except requests.exceptions.RequestException as e:
+        return f"Error fetching local events: {str(e)}"
 
 def get_travel_recommendations(user_input):
     trip_duration = extract_trip_duration(user_input)
@@ -39,7 +55,9 @@ def get_travel_recommendations(user_input):
     destination = destination_match.group(1).strip() if destination_match else "Unknown"
     
     real_time_data = fetch_real_time_data(destination)
+    time.sleep(1)  # To prevent rate limiting
     weather = fetch_weather(destination)
+    time.sleep(1)
     local_events = fetch_local_events(destination)
     
     prompt = f"""
@@ -69,11 +87,13 @@ def get_travel_recommendations(user_input):
     
     response = openai.ChatCompletion.create(
         model="gpt-4",
-        messages=[{"role": "system", "content": "You are a structured AI travel planner."},
-                  {"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are a structured AI travel planner."},
+            {"role": "user", "content": prompt}
+        ]
     )
     
-    return response['choices'][0]['message']['content']
+    return response["choices"][0]["message"]["content"]
 
 st.title("🌍 AI Travel Planner")
 user_query = st.text_input("Tell me about your trip!")
