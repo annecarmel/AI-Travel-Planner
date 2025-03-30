@@ -5,8 +5,9 @@ from datetime import datetime
 import requests
 
 # Streamlit UI
-st.title("AI Travel Planner")
-st.write("Chat with the AI to plan your perfect trip!")
+st.title("AI Travel Planner ✈️")
+st.write("Hello! 😊 I'm your AI Travel Assistant. Let's plan your perfect trip! 🌍")
+st.write("I'll ask you a few questions to customize your itinerary.")
 
 # Initialize session state
 if "messages" not in st.session_state:
