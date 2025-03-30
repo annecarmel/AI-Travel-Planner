@@ -21,4 +21,5 @@ jobs:
       - name: Run OpenAI Script
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python your_script.py
+        run: python openai_script.py
+
