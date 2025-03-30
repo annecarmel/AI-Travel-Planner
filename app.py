@@ -10,30 +10,33 @@ def extract_trip_duration(user_input):
     return 3  # Default to 3 days if not specified
 
 def fetch_real_time_data(destination):
-    search_url = f"https://api.example.com/search?query={destination} travel"  # Replace with a real API
-    response = requests.get(search_url)
+    search_url = f"https://api.skyscanner.net/apiservices/browsequotes/v1.0/US/USD/en-US/anywhere/{destination}/anytime"  # Replace with real API key
+    headers = {"apikey": "YOUR_SKYSCANNER_API_KEY"}
+    response = requests.get(search_url, headers=headers)
     if response.status_code == 200:
         return response.json()
     return None
 
 def fetch_weather(destination):
-    weather_url = f"https://api.weatherapi.com/v1/current.json?key=YOUR_API_KEY&q={destination}"
+    weather_url = f"https://api.weatherapi.com/v1/current.json?key=YOUR_WEATHER_API_KEY&q={destination}"
     response = requests.get(weather_url)
     if response.status_code == 200:
-        return response.json()['current']['condition']['text']
+        return response.json().get('current', {}).get('condition', {}).get('text', "Weather data unavailable")
     return "Weather data unavailable"
 
 def fetch_local_events(destination):
-    events_url = f"https://api.example.com/events?location={destination}"  # Replace with real API
-    response = requests.get(events_url)
+    events_url = f"https://www.eventbriteapi.com/v3/events/search/?location.address={destination}"  # Replace with real API key
+    headers = {"Authorization": "Bearer YOUR_EVENTBRITE_API_KEY"}
+    response = requests.get(events_url, headers=headers)
     if response.status_code == 200:
-        return response.json()
+        events = response.json().get("events", [])
+        return [event["name"]["text"] for event in events[:5]] if events else "No upcoming events."
     return "No local events found"
 
 def get_travel_recommendations(user_input):
     trip_duration = extract_trip_duration(user_input)
     destination_match = re.search(r'to\s+([A-Za-z\s]+)', user_input, re.IGNORECASE)
-    destination = destination_match.group(1) if destination_match else "Unknown"
+    destination = destination_match.group(1).strip() if destination_match else "Unknown"
     
     real_time_data = fetch_real_time_data(destination)
     weather = fetch_weather(destination)
@@ -58,7 +61,7 @@ def get_travel_recommendations(user_input):
     
     **Flights & Hotels:** {real_time_data if real_time_data else "Could not fetch real-time data."}
     **Weather:** {weather}
-    **Local Events:** {local_events if local_events else "No upcoming events."}
+    **Local Events:** {', '.join(local_events) if isinstance(local_events, list) else local_events}
     
     User Input: {user_input}
     AI Response:
