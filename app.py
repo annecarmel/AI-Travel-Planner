@@ -85,7 +85,8 @@ def get_travel_recommendations(user_input):
     AI Response:
     """
     
-    response = openai.ChatCompletion(
+    client = openai.OpenAI()
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a structured AI travel planner."},
@@ -93,7 +94,7 @@ def get_travel_recommendations(user_input):
         ]
     )
     
-    return response["choices"][0]["message"]["content"]
+    return response.choices[0].message.content
 
 st.title("🌍 AI Travel Planner")
 user_query = st.text_input("Tell me about your trip!")
