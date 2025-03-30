@@ -19,7 +19,9 @@ jobs:
         run: pip install openai
 
       - name: Run OpenAI Script
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+       env:
+       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+
         run: python openai_script.py
 
