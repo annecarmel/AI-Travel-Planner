@@ -88,18 +88,21 @@ def get_travel_recommendations(user_input):
     
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key or not api_key.startswith("sk-"):
-        raise ValueError("Error: OpenAI API key is missing or invalid. Please set the OPENAI_API_KEY environment variable.")
+        st.error("Error: OpenAI API key is missing or invalid. Please set the OPENAI_API_KEY environment variable.")
+        return "API key error."
     
     client = openai.OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a structured AI travel planner."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a structured AI travel planner."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content
+    except openai.OpenAIError as e:
+        return f"Error communicating with OpenAI: {str(e)}"
 
 st.title("🌍 AI Travel Planner")
 user_query = st.text_input("Tell me about your trip!")
