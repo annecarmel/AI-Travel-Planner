@@ -4,6 +4,7 @@ import re
 import requests
 import time
 import os
+from openai import OpenAIError  # ✅ Correct placement
 
 def extract_trip_duration(user_input):
     match = re.search(r'(\d+)\s*day', user_input, re.IGNORECASE)
@@ -94,18 +95,20 @@ def get_travel_recommendations(user_input):
     if not api_key:
         st.error("Error: OpenAI API key is missing. Please set it in Streamlit secrets.")
         return "API key error."
-    
+
     try:
-        response = openai.ChatCompletion.create(
+        # ✅ Corrected OpenAI API call
+        client = openai.Client(api_key=api_key)  
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a structured AI travel planner."},
                 {"role": "user", "content": prompt}
-            ],
-            api_key=api_key
+            ]
         )
-        return response["choices"][0]["message"]["content"]
-    except openai.error.OpenAIError as e:
+        return response.choices[0].message.content  # ✅ Correct response handling
+
+    except OpenAIError as e:
         return f"Error communicating with OpenAI: {str(e)}"
 
 st.title("🌍 AI Travel Planner")
