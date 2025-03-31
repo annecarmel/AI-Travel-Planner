@@ -4,7 +4,7 @@ import re
 import requests
 import time
 import os
-from openai import OpenAIError  # ✅ Correct placement
+from openai import OpenAIError
 
 def extract_trip_duration(user_input):
     match = re.search(r'(\d+)\s*day', user_input, re.IGNORECASE)
@@ -97,10 +97,10 @@ def get_travel_recommendations(user_input):
         return "API key error."
 
     try:
-        # ✅ Corrected OpenAI API call
-        client = openai.Client(api_key=api_key)  
+        # ✅ Correct OpenAI API call
+        client = openai.OpenAI(api_key=api_key)  
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4-turbo",  # ✅ Change model if needed
             messages=[
                 {"role": "system", "content": "You are a structured AI travel planner."},
                 {"role": "user", "content": prompt}
