@@ -7,17 +7,17 @@ import os
 
 def extract_trip_duration(user_input):
     match = re.search(r'(\d+)\s*day', user_input, re.IGNORECASE)
-    if match:
-        return int(match.group(1))
-    return 3  # Default to 3 days if not specified
+    return int(match.group(1)) if match else 3  # Default to 3 days if not specified
 
 def fetch_real_time_data(destination):
+    API_KEY = st.secrets["general"].get("SKYSCANNER_API_KEY")
+    if not API_KEY:
+        return "API key missing. Please update your API key."
+    
+    search_url = f"https://api.skyscanner.net/apiservices/browsequotes/v1.0/US/USD/en-US/anywhere/{destination}/anytime"
+    headers = {"apikey": API_KEY}
+    
     try:
-        API_KEY = os.environ.get("SKYSCANNER_API_KEY")
-        if not API_KEY:
-            return "API key missing. Please update your API key."
-        search_url = f"https://api.skyscanner.net/apiservices/browsequotes/v1.0/US/USD/en-US/anywhere/{destination}/anytime"
-        headers = {"apikey": API_KEY}
         response = requests.get(search_url, headers=headers)
         response.raise_for_status()
         return response.json()
@@ -25,11 +25,13 @@ def fetch_real_time_data(destination):
         return f"Error fetching real-time travel data: {str(e)}"
 
 def fetch_weather(destination):
+    API_KEY = st.secrets["general"].get("WEATHER_API_KEY")
+    if not API_KEY:
+        return "API key missing. Please update your API key."
+    
+    weather_url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={destination}"
+    
     try:
-        API_KEY = os.environ.get("WEATHER_API_KEY")
-        if not API_KEY:
-            return "API key missing. Please update your API key."
-        weather_url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={destination}"
         response = requests.get(weather_url)
         response.raise_for_status()
         return response.json().get('current', {}).get('condition', {}).get('text', "Weather data unavailable")
@@ -37,12 +39,14 @@ def fetch_weather(destination):
         return f"Error fetching weather data: {str(e)}"
 
 def fetch_local_events(destination):
+    API_KEY = st.secrets["general"].get("EVENTBRITE_API_KEY")
+    if not API_KEY:
+        return "API key missing. Please update your API key."
+    
+    events_url = f"https://www.eventbriteapi.com/v3/events/search/?location.address={destination}"
+    headers = {"Authorization": f"Bearer {API_KEY}"}
+    
     try:
-        API_KEY = os.environ.get("EVENTBRITE_API_KEY")
-        if not API_KEY:
-            return "API key missing. Please update your API key."
-        events_url = f"https://www.eventbriteapi.com/v3/events/search/?location.address={destination}"
-        headers = {"Authorization": f"Bearer {API_KEY}"}
         response = requests.get(events_url, headers=headers)
         response.raise_for_status()
         events = response.json().get("events", [])
@@ -56,7 +60,7 @@ def get_travel_recommendations(user_input):
     destination = destination_match.group(1).strip() if destination_match else "Unknown"
     
     real_time_data = fetch_real_time_data(destination)
-    time.sleep(1)  # To prevent rate limiting
+    time.sleep(1)  # Prevent rate limiting
     weather = fetch_weather(destination)
     time.sleep(1)
     local_events = fetch_local_events(destination)
@@ -86,22 +90,22 @@ def get_travel_recommendations(user_input):
     AI Response:
     """
     
-    api_key = os.environ.get("OPENAI_API_KEY")
+    api_key = st.secrets["general"].get("OPENAI_API_KEY")
     if not api_key:
-        st.error("Error: OpenAI API key is missing. Please set the OPENAI_API_KEY environment variable in GitHub Secrets.")
+        st.error("Error: OpenAI API key is missing. Please set it in Streamlit secrets.")
         return "API key error."
     
     try:
-        client = openai.OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a structured AI travel planner."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            api_key=api_key
         )
-        return response.choices[0].message.content
-    except openai.OpenAIError as e:
+        return response["choices"][0]["message"]["content"]
+    except openai.error.OpenAIError as e:
         return f"Error communicating with OpenAI: {str(e)}"
 
 st.title("🌍 AI Travel Planner")
