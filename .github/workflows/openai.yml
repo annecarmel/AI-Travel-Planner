@@ -17,7 +17,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Debug Environment Variables
+        run: echo "API Key: ${{ secrets.OPENAI_API_KEY }}"
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
       - name: Run the script
-        run: python your_script.py
+        run: python app.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
